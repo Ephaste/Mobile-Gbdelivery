@@ -1,76 +1,96 @@
+import React, { useState, useEffect } from 'react';
 import { Fontisto } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useState } from 'react';
 import {
   FlatList,
   StyleSheet,
   Text,
   TextInput,
-  View
+  View,
+  ActivityIndicator,
 } from 'react-native';
-import data from '../assets/data/data.json'; // ✅ Import from JSON
 import Category from '../components/Category';
 import Header from '../components/Header';
 import ProductCard from '../components/ProductCard';
 
-
-const categories = ['Frequently asked', 'All', 'Fish', 'Meat', 'Biscuits'];
-
-
-const HomeScreen = () => {
+const HomeScreen = ({ navigation }) => {
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [products, setProducts] = useState(data.products);
-const handleLiked = (item)=>{
-  const newProducts = products.map((prod) =>{
-    if (prod.id ===item.id){
-      return{
-        ...prod,
-        isLiked: true,
+  const [categories, setCategories] = useState(['All']);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const formData = new FormData();
+        formData.append('action', 'GET_PRODUCTS_PAGES_API');
+        formData.append('pageno', '1');
+
+        const res = await fetch('https://gbdelivering.com/action/select.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'multipart/form-data' },
+          body: formData,
+        });
+
+        const data = await res.json();
+        setProducts(data);
+
+        // Dynamically extract unique categories from the products
+        const dynamicCategories = ['All', ...new Set(data.map(p => p.subcategory))];
+        setCategories(dynamicCategories);
+      } catch (e) {
+        console.error('Failed to load products', e);
+      } finally {
+        setLoading(false);
       }
-    }
-    return prod;
-  });
-  setProducts(newProducts);
-};
+    };
+
+    fetchProducts();
+  }, []);
+
+  const filtered = selectedCategory === 'All'
+    ? products
+    : products.filter(p => p.subcategory === selectedCategory);
+
   return (
     <LinearGradient colors={['#ffffff', '#ffffff']} style={styles.container}>
       <Header />
 
-      <FlatList
-        numColumns={2}
-        ListHeaderComponent={
-          <>
-            <Text style={styles.orderText}>Order your Favourites!</Text>
+      <View style={styles.searchContainer}>
+        <TextInput
+          style={styles.input}
+          placeholder="Search"
+        />
+        <Fontisto name="search" size={20} color="#FF4500" />
+      </View>
 
-            {/* Input container */}
-            <View style={styles.inputContainer}>
-              <TextInput style={styles.input} placeholder="Search" />
-              <Fontisto name="search" size={20} color="#FF4500" style={styles.icon} />
-            </View>
-
-            {/* Category section */}
-            <FlatList
-              data={categories}
-              renderItem={({ item }) => (
-                <Category
-                  title={item}
-                  isSelected={item === selectedCategory}
-                  onSelect={() => setSelectedCategory(item)}
-                />
-              )}
-              keyExtractor={(item, index) => index.toString()}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.categoryList}
+      <View style={styles.categoryContainer}>
+        <FlatList
+          data={categories}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          keyExtractor={(c) => c}
+          renderItem={({ item }) => (
+            <Category
+              title={item}
+              isSelected={item === selectedCategory}
+              onSelect={() => setSelectedCategory(item)}
             />
-          </>
-        }
-        data={products}
-        renderItem={({ item, index }) => <ProductCard item={item} handleLiked={handleLiked} />}
-        keyExtractor={(item) => item.id.toString()}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 }}
-      />
+          )}
+        />
+      </View>
+
+      {loading ? (
+        <ActivityIndicator size="large" color="#FF4500" style={{ marginTop: 50 }} />
+      ) : (
+        <FlatList
+          data={filtered}
+          renderItem={({ item }) => <ProductCard item={item} />}
+          keyExtractor={item => item.id.toString()}
+          numColumns={2}
+          contentContainerStyle={{ paddingBottom: 100 }}
+        />
+      )}
     </LinearGradient>
   );
 };
@@ -78,33 +98,23 @@ const handleLiked = (item)=>{
 export default HomeScreen;
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 16,
-  },
-  orderText: {
-    fontSize: 23,
-    color: "#000000",
-    marginTop: 20,
-  },
-  inputContainer: {
+  container: { flex: 1, padding: 16 },
+  searchContainer: {
     flexDirection: 'row',
-    height: 50,
     borderWidth: 2,
-    paddingHorizontal: 10,
-    borderRadius: 10,
     borderColor: '#FF4500',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    height: 50,
     alignItems: 'center',
     marginTop: 20,
   },
+  categoryContainer: {
+    marginTop: 20,
+    paddingVertical: 10,
+  },
   input: {
     flex: 1,
-    height: '100%',
     fontSize: 16,
-  },
-  icon: {
-    marginLeft: 10,
-  },
-  categoryList: {
-    marginTop: 20,
   },
 });

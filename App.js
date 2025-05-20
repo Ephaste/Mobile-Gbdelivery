@@ -1,156 +1,177 @@
-import React, { useContext } from 'react';
-import { Text, View, StyleSheet } from 'react-native';
-import {
-  Entypo,
-  FontAwesome,
-  MaterialCommunityIcons,
-  MaterialIcons,
-} from '@expo/vector-icons';
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import React, { useContext } from "react";
+import { Text, View, StyleSheet } from "react-native";
+import { Entypo, FontAwesome, MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
+import { NavigationContainer } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 
-import HomeScreen from './src/screens/HomeScreen';
-import ProductDetailsScreen from './src/screens/ProductDetailsScreen';
-import CartScreen from './src/screens/CartScreen';
-import CheckoutScreen from './src/screens/CheckoutScreen';
-import Login from './src/screens/auth/Login';
-import Register from './src/screens/auth/Register';
-import AccountScreen from './src/screens/AccountScreen';
+// Add this import:
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
-import { CartContext, CartProvider } from './src/context/CartContext';
+// Screens
+import HomeScreen from "./src/screens/HomeScreen";
+import ProductDetailsScreen from "./src/screens/ProductDetailsScreen";
+import CartScreen from "./src/screens/CartScreen";
+import CheckoutScreen from "./src/screens/CheckoutScreen";
+import NewAddress from "./src/screens/NewAddress"; // Fixed typo
+import DPO from "./src/screens/DPO";
+import Login from "./src/screens/auth/Login";
+import Register from "./src/screens/auth/Register";
+import AccountScreen from "./src/screens/AccountScreen";
 
+// Context
+import { CartContext, CartProvider } from "./src/context/CartContext";
+
+// Navigators
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-/** ✅ Home Stack: Home -> Product Details */
-const HomeStack = () => (
-  <Stack.Navigator screenOptions={{ headerShown: false }}>
-    <Stack.Screen name="Home" component={HomeScreen} />
-    <Stack.Screen name="PRODUCT_DETAILS" component={ProductDetailsScreen} />
-  </Stack.Navigator>
-);
+// Home Stack
+function HomeStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Home" component={HomeScreen} />
+      <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />
+    </Stack.Navigator>
+  );
+}
 
-/** ✅ Cart Stack: Cart -> Checkout */
-const CartStack = () => (
-  <Stack.Navigator screenOptions={{ headerShown: false }}>
-    <Stack.Screen name="Cart" component={CartScreen} />
-    <Stack.Screen name="CHECKOUT" component={CheckoutScreen} />
-  </Stack.Navigator>
-);
+// Cart Stack
+function CartStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Cart" component={CartScreen} />
+      <Stack.Screen name="Checkout" component={CheckoutScreen} />
+      <Stack.Screen name="DPO" component={DPO} />
+      <Stack.Screen name="Newaddress" component={NewAddress} />
+    </Stack.Navigator>
+  );
+}
 
-/** ✅ Auth Stack: Login -> Register */
-const AuthStack = () => (
-  <Stack.Navigator initialRouteName="Login" screenOptions={{ headerShown: false }}>
-    <Stack.Screen name="Login" component={Login} />
-    <Stack.Screen name="Register" component={Register} />
-     <Stack.Screen name="Account" component={AccountScreen} /> 
-  </Stack.Navigator>
-);
+// Auth Stack
+function AuthStack() {
+  return (
+    <Stack.Navigator initialRouteName="Login" screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Login" component={Login} />
+      <Stack.Screen name="Register" component={Register} />
+      <Stack.Screen name="Account" component={AccountScreen} />
+    </Stack.Navigator>
+  );
+}
 
-/** ✅ Cart Icon with badge */
-const CartTabIcon = ({ size, color }) => {
-  const { carts } = useContext(CartContext);
+// Separate ReorderScreen component (was inline)
+function ReorderScreen() {
+  return (
+    <View style={styles.screenCenter}>
+      <Text>Reorder</Text>
+    </View>
+  );
+}
+
+// Custom Cart Icon with Badge
+function CartTabIcon({ size, color }) {
+  const { cartItems } = useContext(CartContext);
+  const count = cartItems.reduce(
+    (sum, item) => sum + Number(item.cart_item_product_quantity || 0),
+    0
+  );
 
   return (
-    <View>
+    
+    <View style={styles.iconWrapper}>
       <MaterialCommunityIcons name="cart" size={size} color={color} />
-      {carts.length > 0 && (
-        <View style={styles.cartBadge}>
-          <Text style={styles.cartBadgeText}>{carts.length}</Text>
+      {count > 0 && (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{count}</Text>
         </View>
       )}
     </View>
   );
-};
+}
 
-/** ✅ Dummy Reorder screen component (no inline) */
-const ReorderScreen = () => (
-  <View style={styles.screenCenter}>
-    <Text>Reorder</Text>
-  </View>
-);
-
-/** ✅ Bottom Tabs */
-const MainTabNavigator = () => (
-  <Tab.Navigator
-    screenOptions={{
-      headerShown: false,
-      tabBarShowLabel: false,
-      tabBarActiveTintColor: '#E96E6E',
-    }}
-  >
-    <Tab.Screen
-      name="HomeTab"
-      component={HomeStack}
-      options={{
-        tabBarIcon: ({ size, color }) => (
-          <Entypo name="home" size={size} color={color} />
-        ),
-      }}
-    />
-
-    <Tab.Screen
-      name="ReorderTab"
-      component={ReorderScreen} // ✅ NO inline component
-      options={{
-        tabBarIcon: ({ size, color }) => (
-          <MaterialIcons name="reorder" size={size} color={color} />
-        ),
-      }}
-    />
-
-    <Tab.Screen
-      name="CartTab"
-      component={CartStack}
-      options={{
-        tabBarIcon: CartTabIcon,
-      }}
-    />
-
-    <Tab.Screen
-      name="AccountTab"
-      component={AuthStack}
-      options={{
-        tabBarIcon: ({ size, color }) => (
-          <FontAwesome name="user" size={size} color={color} />
-        ),
-      }}
-    />
-  </Tab.Navigator>
-);
-
-export default function App() {
+// Bottom Tab Navigator
+function MainTabNavigator() {
   return (
-    <CartProvider>
-      <NavigationContainer>
-        <MainTabNavigator />
-      </NavigationContainer>
-    </CartProvider>
+    <Tab.Navigator
+      initialRouteName="HomeTab"
+      screenOptions={{
+        headerShown: false,
+        tabBarShowLabel: false,
+        tabBarActiveTintColor: "#E96E6E",
+      }}
+    >
+      <Tab.Screen
+        name="HomeTab"
+        component={HomeStack}
+        options={{
+          tabBarIcon: ({ size, color }) => <Entypo name="home" size={size} color={color} />,
+        }}
+      />
+      <Tab.Screen
+        name="ReorderTab"
+        component={ReorderScreen}
+        options={{
+          tabBarIcon: ({ size, color }) => <MaterialIcons name="reorder" size={size} color={color} />,
+        }}
+      />
+      <Tab.Screen
+        name="CartTab"
+        component={CartStack}
+        options={{
+          tabBarIcon: ({ size, color }) => <CartTabIcon size={size} color={color} />,
+        }}
+      />
+      <Tab.Screen
+        name="AccountTab"
+        component={AuthStack}
+        options={{
+          tabBarIcon: ({ size, color }) => <FontAwesome name="user" size={size} color={color} />,
+        }}
+      />
+    </Tab.Navigator>
   );
 }
 
+// App Entry Point with GestureHandlerRootView wrapping
+export default function App() {
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <CartProvider>
+        <NavigationContainer>
+          <MainTabNavigator />
+        </NavigationContainer>
+      </CartProvider>
+    </GestureHandlerRootView>
+  );
+}
+
+// Styles
 const styles = StyleSheet.create({
-  cartBadge: {
-    position: 'absolute',
+  iconWrapper: {
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  badge: {
+    position: "absolute",
     right: -6,
     top: -3,
-    backgroundColor: 'red',
-    borderRadius: 10,
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    minWidth: 16,
+    backgroundColor: "red",
+    borderRadius: 8,
+    width: 16,
+    height: 16,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  cartBadgeText: {
-    color: 'white',
+  badgeText: {
+    color: "white",
     fontSize: 10,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   screenCenter: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

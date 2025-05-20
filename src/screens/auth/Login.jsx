@@ -1,3 +1,5 @@
+// src/screens/Login.js
+
 import React, { useState } from 'react';
 import {
   StyleSheet,
@@ -6,7 +8,7 @@ import {
   View,
   TextInput,
   ScrollView,
-  Alert
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
@@ -15,61 +17,55 @@ import Spinner from 'react-native-loading-spinner-overlay';
 
 const Login = () => {
   const navigation = useNavigation();
-
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const storeUserId = async (value) => {
-    try {
-      await AsyncStorage.setItem('@userId', value);
-    } catch (e) {
-      console.log('Error saving user ID', e);
-    }
-  };
-
-  const handleLogin = async () => {
+ const handleLogin = async () => {
   if (!username || !password) {
     Alert.alert('Error', 'Please enter both username and password');
     return;
   }
-
   setLoading(true);
-
   try {
-    const response = await fetch('https://gbdelivering.com/action/login.php', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`,
-    });
+    const response = await fetch(
+      'https://gbdelivering.com/action/login.php',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`,
+      }
+    );
 
-    const result = await response.text(); // Get plain string
-    console.log('Login result:', result);
+    const text = await response.text();  // get response as plain text
 
-    if (result === 'ADMIN' || result === 'SELLER' || result === 'CLIENT') {
-      await AsyncStorage.setItem('@userRole', result);
+    console.log('Server response text:', text);
+
+    // Handle plain text status response:
+    if (text === 'CLIENT' || text === 'ADMIN' || text === 'SELLER') {
+      // You might not have user_id in this response, set dummy or fetch it separately
+      await AsyncStorage.setItem('@userRole', text);
+      // Save dummy userId or fetch from another endpoint if necessary
+      await AsyncStorage.setItem('@userId', 'unknown');
+
       Alert.alert('Success', 'Login successful', [
         {
           text: 'OK',
-          onPress: () =>   navigation.navigate('HomeTab', {
-  screen: 'Home',
-}),
-
+          onPress: () => navigation.navigate('HomeTab', { screen: 'Home' }),
         },
       ]);
-    } else if (result === 'NOT APPROVED') {
+    } else if (text === 'NOT APPROVED') {
       Alert.alert('Pending', 'Your account is pending approval. Please wait.');
-    } else if (result === 'FAILED') {
+    } else if (text === 'FAILED') {
       Alert.alert('Error', 'Invalid credentials');
     } else {
-      Alert.alert('Error', 'Unexpected response: ' + result);
+      Alert.alert('Error', 'Unexpected response: ' + text);
     }
-
   } catch (error) {
-    console.log('Login error:', error);
-    Alert.alert('Error', 'Something went wrong. Please try again');
+    console.log('Login error:', error.message || error);
+    Alert.alert('Error', error.message || 'Something went wrong. Please try again');
   } finally {
     setLoading(false);
   }
@@ -80,13 +76,18 @@ const Login = () => {
     <LinearGradient colors={['#ffffff', '#ffffff']} style={styles.wrapper}>
       <Spinner
         visible={loading}
-        textContent={"Logging in..."}
+        textContent={'Logging in...'}
         overlayColor="rgba(0, 0, 0, 0.1)"
       />
 
-      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.card}>
-          <Text style={styles.subtitle}>If you have an account with us, please login</Text>
+          <Text style={styles.subtitle}>
+            If you have an account with us, please login
+          </Text>
 
           <Text style={styles.label}>USERNAME OR E-MAIL *</Text>
           <TextInput
@@ -112,13 +113,21 @@ const Login = () => {
           </TouchableOpacity>
 
           <View style={styles.newCustomerSection}>
-            <Text style={styles.newCustomerTitle}>I'M A NEW CUSTOMER/SELLER</Text>
-            <Text style={styles.newCustomerText}>
-              By creating an account with our store, you will be able to move through the checkout process faster,
-              store shipping addresses, view and track your orders in your account, and more.
+            <Text style={styles.newCustomerTitle}>
+              I'M A NEW CUSTOMER/SELLER
             </Text>
-            <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Register')}>
-              <Text style={styles.buttonText}>CREATE AN ACCOUNT</Text>
+            <Text style={styles.newCustomerText}>
+              By creating an account with our store, you will be able to move
+              through the checkout process faster, store shipping addresses,
+              view and track your orders in your account, and more.
+            </Text>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => navigation.navigate('Register')}
+            >
+              <Text style={styles.buttonText}>
+                CREATE AN ACCOUNT
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -130,9 +139,7 @@ const Login = () => {
 export default Login;
 
 const styles = StyleSheet.create({
-  wrapper: {
-    flex: 1,
-  },
+  wrapper: { flex: 1 },
   scrollContainer: {
     paddingVertical: 20,
     paddingHorizontal: 20,

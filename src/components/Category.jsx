@@ -30,5 +30,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     textAlign: 'center',
     borderRadius: 16,
+    overflow: 'hidden',
   },
 });

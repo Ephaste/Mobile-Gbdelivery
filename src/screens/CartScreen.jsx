@@ -1,5 +1,13 @@
-import { StyleSheet, Text, View, FlatList, TouchableOpacity } from 'react-native';
 import React, { useContext } from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
+  FlatList,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
 import Header from '../components/Header';
 import CartCard from '../components/CartCard';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -7,18 +15,22 @@ import { CartContext } from '../context/CartContext';
 import { useNavigation } from '@react-navigation/native';
 
 const CartScreen = () => {
-  const { carts } = useContext(CartContext);
+  const { cartItems, initializing, removeFromCart, clearCart } =
+    useContext(CartContext);
   const navigation = useNavigation();
 
-  const totalPrice = carts.reduce(
-    (total, item) => total + parseFloat(item.price) * item.quantity,
-    0
-  );
-
-  if (carts.length === 0) {
+  if (initializing) {
     return (
-      <LinearGradient colors={['#ffffff', '#ffffff']} style={styles.container}>
-        <Header isCart={true} />
+      <View style={[styles.container, styles.center]}>
+        <ActivityIndicator size="large" color="#FF4500" />
+      </View>
+    );
+  }
+
+  if (cartItems.length === 0) {
+    return (
+      <LinearGradient colors={['#f2f2f2', '#ffffff']} style={styles.container}>
+        <Header isCart />
         <View style={styles.emptyCartContainer}>
           <Text style={styles.emptyCartText}>Your cart is empty!</Text>
         </View>
@@ -26,39 +38,65 @@ const CartScreen = () => {
     );
   }
 
+  const total = cartItems.reduce(
+    (sum, item) =>
+      sum +
+      (item.cart_item_price || 0) *
+        (item.cart_item_product_quantity || 0),
+    0
+  );
+
   return (
-    <LinearGradient colors={['#ffffff', '#ffffff']} style={styles.container}>
-      <Header isCart={true} />
+    <LinearGradient colors={['#f2f2f2', '#ffffff']} style={styles.container}>
+      <Header isCart />
 
       <FlatList
-        data={carts}
-        style={{ flex: 1 }}
-        contentContainerStyle={styles.listContent}
-        renderItem={({ item }) => <CartCard product={item} />}
-        keyExtractor={(item) => item.id.toString()}
+        data={cartItems}
+        keyExtractor={i => i.item_id.toString()}
+        renderItem={({ item }) => (
+          <CartCard
+            product={{
+              id: item.item_id,
+              name: item.name,
+              price: item.cart_item_price,
+              quantity: item.cart_item_product_quantity,
+              image: `https://gbdelivering.com/uploads/${item.photo}`,
+            }}
+            onRemove={() => removeFromCart(item.item_id)}
+          />
+        )}
         ListFooterComponent={
-          <>
-            <View style={styles.priceContainer}>
-              <View style={styles.divider}></View>
-              <View style={styles.priceAndTitle}>
-                <Text style={styles.text}>Total:</Text>
-                <Text style={[styles.text, { color: 'black', fontWeight: '700' }]}>
-                  {totalPrice.toFixed(2)} Rwf
-                </Text>
-              </View>
-            </View>
+          <View style={styles.footer}>
+            <Text style={styles.total}>
+              Total: {total.toFixed(2)} Rwf
+            </Text>
 
-            <View style={styles.buttonsContainer}>
-              <TouchableOpacity
-                style={styles.button}
-                onPress={() => navigation.navigate('CartTab', { screen: 'CHECKOUT' })}
-              >
-                <Text style={styles.buttonText}>Check Out</Text>
-              </TouchableOpacity>
-            </View>
-          </>
+            <TouchableOpacity
+              style={[styles.button, styles.clearButton]}
+              onPress={() =>
+                Alert.alert(
+                  'Clear Cart',
+                  'Are you sure you want to clear your cart?',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Yes', onPress: () => clearCart() },
+                  ]
+                )
+              }
+            >
+              <Text style={styles.buttonText}>Clear Cart</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() =>
+                navigation.navigate('Newaddress')
+              }
+            >
+              <Text style={styles.buttonText}>Checkout</Text>
+            </TouchableOpacity>
+          </View>
         }
-        showsVerticalScrollIndicator={false}
       />
     </LinearGradient>
   );
@@ -67,54 +105,28 @@ const CartScreen = () => {
 export default CartScreen;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  listContent: {
-    paddingBottom: 30,
-  },
-  priceContainer: {
-    marginTop: 40,
-  },
-  priceAndTitle: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginHorizontal: 20,
-    marginVertical: 10,
-  },
-  text: {
-    color: '#757575',
-    fontSize: 16,
-  },
-  buttonsContainer: {
-    paddingHorizontal: 14,
-    marginTop: 16,
-    marginBottom: 30,
+  container: { flex: 1 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  footer: { padding: 20 },
+  total: {
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'right',
+    marginBottom: 12,
   },
   button: {
     backgroundColor: '#FF4500',
     paddingVertical: 12,
     borderRadius: 10,
     alignItems: 'center',
-    marginBottom: 10,
+    marginVertical: 6,
   },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  divider: {
-    borderWidth: 1,
-    borderColor: '#C0C0C0',
-    marginVertical: 10,
-  },
+  clearButton: { backgroundColor: '#888' },
+  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   emptyCartContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  emptyCartText: {
-    fontSize: 18,
-    color: '#757575',
-  },
+  emptyCartText: { fontSize: 18, color: '#757575' },
 });

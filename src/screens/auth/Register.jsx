@@ -1,3 +1,6 @@
+// src/screens/Register.js
+
+import React, { useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -7,9 +10,8 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
-import React, { useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
-import Header from '../../components/Header'; // Ensure correct path
+//import Header from '../components/Header';
 
 const Register = () => {
   const [accountType, setAccountType] = useState('customer');
@@ -35,57 +37,54 @@ const Register = () => {
       Alert.alert('Error', 'Username is required');
       return;
     }
-
     if (password !== confirmPassword) {
       Alert.alert('Error', 'Passwords do not match');
       return;
     }
 
-    // DEBUG: log the username being submitted
     const finalUsername = username.toLowerCase().trim();
-    console.log('Submitting username:', finalUsername);
 
-    let formdata = new FormData();
-    formdata.append("action", "CREATE_ACCOUNT_API");
-    formdata.append("first_name", firstname);
-    formdata.append("last_name", lastname);
-    formdata.append("email", email);
-    formdata.append("phone_no", phoneno);
-    formdata.append("dob", birthday);
-    formdata.append("username", finalUsername);
-    formdata.append("password", password);
-    formdata.append("province", province);
-    formdata.append("district", district);
-    formdata.append("sector", sector);
-    formdata.append("cell", cell);
-    formdata.append("village", village);
-    formdata.append("street", street);
-    formdata.append("described_address", desaddress);
+    const formdata = new FormData();
+    formdata.append('action', 'CREATE_ACCOUNT_API');
+    formdata.append('first_name', firstname);
+    formdata.append('last_name', lastname);
+    formdata.append('email', email);
+    formdata.append('phone_no', phoneno);
+    formdata.append('dob', birthday);
+    formdata.append('username', finalUsername);
+    formdata.append('password', password);
+    formdata.append('account_type', accountType);
+    formdata.append('province', province);
+    formdata.append('district', district);
+    formdata.append('sector', sector);
+    formdata.append('cell', cell);
+    formdata.append('village', village);
+    formdata.append('street', street);
+    formdata.append('described_address', desaddress);
 
     try {
-      const response = await fetch("https://gbdelivering.com/action/insert.php", {
-        method: "POST",
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-        body: formdata,
-      });
-
-      const result = await response.json();
-      console.log('Raw Response:', result);
-
-      if (Array.isArray(result)) {
-        const data = result[0];
-
-        if (data.status === "ACCOUNT_CREATED") {
-          Alert.alert('Success', 'Account created successfully!');
-          navigation.navigate("LOGIN");
-        } else {
-          Alert.alert('Error', data.status || 'Registration failed');
-          console.log('Backend Error:', data);
+      const response = await fetch(
+        'https://gbdelivering.com/action/insert.php',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'multipart/form-data' },
+          body: formdata,
         }
+      );
+      const result = await response.json();
+
+      if (Array.isArray(result) && result[0].status === 'ACCOUNT_CREATED') {
+        Alert.alert('Success', 'Account created successfully!', [
+          {
+            text: 'OK',
+            onPress: () => navigation.navigate('Login'),
+          },
+        ]);
       } else {
-        Alert.alert('Error', 'Unexpected response format.');
+        Alert.alert(
+          'Error',
+          result[0]?.status || 'Registration failed'
+        );
       }
     } catch (error) {
       console.error('Error:', error);
@@ -107,14 +106,24 @@ const Register = () => {
               style={styles.radioOption}
               onPress={() => setAccountType('customer')}
             >
-              <View style={[styles.radioCircle, accountType === 'customer' && styles.selectedRadio]} />
+              <View
+                style={[
+                  styles.radioCircle,
+                  accountType === 'customer' && styles.selectedRadio,
+                ]}
+              />
               <Text style={styles.radioLabel}>Customer</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.radioOption}
               onPress={() => setAccountType('seller')}
             >
-              <View style={[styles.radioCircle, accountType === 'seller' && styles.selectedRadio]} />
+              <View
+                style={[
+                  styles.radioCircle,
+                  accountType === 'seller' && styles.selectedRadio,
+                ]}
+              />
               <Text style={styles.radioLabel}>Seller</Text>
             </TouchableOpacity>
           </View>
@@ -206,7 +215,7 @@ const Register = () => {
             <TouchableOpacity>
               <Text style={styles.linkText}>Return to Store</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => navigation.navigate("LOGIN")}>
+            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
               <Text style={styles.linkText}>Return to Sign In</Text>
             </TouchableOpacity>
           </View>
