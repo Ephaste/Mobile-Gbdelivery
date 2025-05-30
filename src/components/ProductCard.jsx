@@ -1,5 +1,3 @@
-// src/components/ProductCard.js
-
 import React, { useEffect, useState } from 'react';
 import {
   Image,
@@ -12,14 +10,17 @@ import {
 import { AntDesign } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
-const ProductCard = ({ item }) => {
+const ProductCard = ({ item, allProducts }) => {
   const [isLiked, setIsLiked] = useState(false);
   const [imageUrl, setImageUrl] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigation = useNavigation();
 
+  // Pick whichever field holds your stock count:
+ 
+  const isOutOfStock = item.stock_quantity == 0;
   useEffect(() => {
-    const productId = item.id;
+    const productId = item.product_id ?? item.id;
     if (!productId) {
       setLoading(false);
       return;
@@ -35,12 +36,10 @@ const ProductCard = ({ item }) => {
           'https://gbdelivering.com/action/select.php',
           {
             method: 'POST',
-            headers: { 'Content-Type': 'multipart/form-data' },
             body: formData,
           }
         );
         const json = await response.json();
-        // json[0] might already be a full URL:
         const raw = json[0]?.trim();
         const fullUrl = raw
           ? raw.startsWith('http')
@@ -65,30 +64,33 @@ const ProductCard = ({ item }) => {
         navigation.navigate('ProductDetails', {
           product: item,
           imageUrl,
+          allProducts,
         })
       }
     >
-      {loading ? (
-        <ActivityIndicator
-          size="large"
-          color="#FF4500"
-          style={styles.loader}
-        />
-      ) : (
-        <Image
-          source={{
-            uri:
-              imageUrl ||
-              'https://gbdelivering.com/uploads/38427b190dfcd7c7a5a8aa2b81f2565c0e9b9b333127f84c0661d78e04278593Boni Tricolore 2.jpg',
-          }}
-          style={styles.coverImage}
-          resizeMode="cover"
-        />
-      )}
+      <View>
+        {loading ? (
+          <ActivityIndicator size="large" color="#FF4500" style={styles.loader} />
+        ) : (
+          <Image
+            source={{
+              uri:
+                imageUrl ||
+                'https://gbdelivering.com/uploads/default-product.jpg',
+            }}
+            style={styles.coverImage}
+            resizeMode="cover"
+          />
+        )}
+
+        {isOutOfStock && (
+          <Text style={styles.outOfStockLabel}>Out of stock</Text>
+        )}
+      </View>
 
       <TouchableOpacity
         style={styles.likeContainer}
-        onPress={() => setIsLiked((v) => !v)}
+        onPress={() => setIsLiked(v => !v)}
       >
         <AntDesign
           name={isLiked ? 'heart' : 'hearto'}
@@ -98,9 +100,9 @@ const ProductCard = ({ item }) => {
       </TouchableOpacity>
 
       <View style={styles.content}>
-        <Text style={styles.title}>{item.name || item.title}</Text>
+        <Text style={styles.title}>{item.product_name || item.name || item.title}</Text>
         <Text style={styles.price}>
-          {item.price ? `${item.price} Rwf` : '—'}
+          {item.product_price || item.price ? `${item.product_price || item.price} Rwf` : '—'}
         </Text>
       </View>
     </TouchableOpacity>
@@ -135,6 +137,19 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 5,
     zIndex: 10,
+  },
+  outOfStockLabel: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: 'red',
+    color: 'white',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    fontSize: 12,
+    fontWeight: 'bold',
+    zIndex: 20,
   },
   content: {
     padding: 10,

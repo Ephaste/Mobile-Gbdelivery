@@ -39,11 +39,11 @@ function HomeStack() {
 // Cart Stack
 function CartStack() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator initialRouteName="Cart" screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Cart" component={CartScreen} />
+      <Stack.Screen name="Newaddress" component={NewAddress} />
       <Stack.Screen name="Checkout" component={CheckoutScreen} />
       <Stack.Screen name="DPO" component={DPO} />
-      <Stack.Screen name="Newaddress" component={NewAddress} />
     </Stack.Navigator>
   );
 }
@@ -90,47 +90,54 @@ function CartTabIcon({ size, color }) {
 }
 
 // Bottom Tab Navigator
-function MainTabNavigator() {
-  return (
-    <Tab.Navigator
-      initialRouteName="HomeTab"
-      screenOptions={{
-        headerShown: false,
-        tabBarShowLabel: false,
-        tabBarActiveTintColor: "#E96E6E",
-      }}
-    >
+ function MainTabNavigator() {
+   return (
+     <Tab.Navigator
+       initialRouteName="HomeTab"
+       screenOptions={{
+         headerShown: false,
+         tabBarShowLabel: false,
+         tabBarActiveTintColor: "#E96E6E",
+       }}
+     >
+       <Tab.Screen
+         name="HomeTab"
+         component={HomeStack}
+         options={{
+           tabBarIcon: ({ size, color }) => (
+             <Entypo name="home" size={size} color={color} />
+           ),
+         }}
+       />
       <Tab.Screen
-        name="HomeTab"
+        name="SearchTab"
         component={HomeStack}
         options={{
-          tabBarIcon: ({ size, color }) => <Entypo name="home" size={size} color={color} />,
+          tabBarIcon: ({ size, color }) => (
+            <FontAwesome name="search" size={size} color={color} />
+          ),
         }}
+       initialParams={{ focusSearch: true }}
       />
-      <Tab.Screen
-        name="ReorderTab"
-        component={ReorderScreen}
-        options={{
-          tabBarIcon: ({ size, color }) => <MaterialIcons name="reorder" size={size} color={color} />,
-        }}
-      />
-      <Tab.Screen
-        name="CartTab"
-        component={CartStack}
-        options={{
-          tabBarIcon: ({ size, color }) => <CartTabIcon size={size} color={color} />,
-        }}
-      />
-      <Tab.Screen
-        name="AccountTab"
-        component={AuthStack}
-        options={{
-          tabBarIcon: ({ size, color }) => <FontAwesome name="user" size={size} color={color} />,
-        }}
-      />
-    </Tab.Navigator>
-  );
-}
+
+       <Tab.Screen
+         name="CartTab"
+         component={CartStack}
+         options={{
+           tabBarIcon: ({ size, color }) => <CartTabIcon size={size} color={color} />,
+         }}
+       />
+       <Tab.Screen
+         name="AccountTab"
+         component={AuthStack}
+         options={{
+           tabBarIcon: ({ size, color }) => <FontAwesome name="user" size={size} color={color} />,
+         }}
+       />
+     </Tab.Navigator>
+   );
+ }
+
 
 // App Entry Point with GestureHandlerRootView wrapping
 export default function App() {

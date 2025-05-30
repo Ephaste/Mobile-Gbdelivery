@@ -21,56 +21,60 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
- const handleLogin = async () => {
-  if (!username || !password) {
-    Alert.alert('Error', 'Please enter both username and password');
-    return;
-  }
-  setLoading(true);
-  try {
-    const response = await fetch(
-      'https://gbdelivering.com/action/login.php',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`,
-      }
-    );
-
-    const text = await response.text();  // get response as plain text
-
-    console.log('Server response text:', text);
-
-    // Handle plain text status response:
-    if (text === 'CLIENT' || text === 'ADMIN' || text === 'SELLER') {
-      // You might not have user_id in this response, set dummy or fetch it separately
-      await AsyncStorage.setItem('@userRole', text);
-      // Save dummy userId or fetch from another endpoint if necessary
-      await AsyncStorage.setItem('@userId', 'unknown');
-
-      Alert.alert('Success', 'Login successful', [
-        {
-          text: 'OK',
-          onPress: () => navigation.navigate('HomeTab', { screen: 'Home' }),
-        },
-      ]);
-    } else if (text === 'NOT APPROVED') {
-      Alert.alert('Pending', 'Your account is pending approval. Please wait.');
-    } else if (text === 'FAILED') {
-      Alert.alert('Error', 'Invalid credentials');
-    } else {
-      Alert.alert('Error', 'Unexpected response: ' + text);
+  const handleLogin = async () => {
+    if (!username.trim() || !password) {
+      Alert.alert('Error', 'Please enter both username and password');
+      return;
     }
-  } catch (error) {
-    console.log('Login error:', error.message || error);
-    Alert.alert('Error', error.message || 'Something went wrong. Please try again');
-  } finally {
-    setLoading(false);
-  }
-};
+    setLoading(true);
 
+    try {
+      const form = new FormData();
+      form.append('username', username.trim());
+      form.append('password', password);
+
+      const res = await fetch('https://gbdelivering.com/action/login_api.php', {
+        method: 'POST',
+        body: form,
+      });
+
+      const users = await res.json();
+
+      console.log('✅ Login API raw response:', users);
+
+      if (Array.isArray(users) && users.length > 0 && users[0].status === 200) {
+        const user = users[0];
+
+        if (user.token) {
+          console.log('✅ Token received:', user.token);
+          await AsyncStorage.setItem('@token', user.token);
+        } else {
+          console.warn('⚠️ No token found in response');
+        }
+
+        // Store user info for later use
+        await AsyncStorage.setItem('@userId', user.userid.toString());
+        await AsyncStorage.setItem('@firstName', user.first_name || '');
+        await AsyncStorage.setItem('@lastName', user.last_name || '');
+        await AsyncStorage.setItem('@email', user.email || '');
+        await AsyncStorage.setItem('@phone', user.phone || '');
+
+        Alert.alert('Success', 'Login successful', [
+          {
+            text: 'OK',
+            onPress: () => navigation.navigate('HomeTab', { screen: 'Home' }),
+          },
+        ]);
+      } else {
+        Alert.alert('Error', 'Invalid credentials or not approved');
+      }
+    } catch (err) {
+      console.error('❌ Login error:', err);
+      Alert.alert('Error', 'Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <LinearGradient colors={['#ffffff', '#ffffff']} style={styles.wrapper}>
@@ -96,6 +100,9 @@ const Login = () => {
             placeholderTextColor="#777"
             value={username}
             onChangeText={setUsername}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            autoComplete="username"
           />
 
           <Text style={styles.label}>PASSWORD *</Text>
@@ -106,6 +113,7 @@ const Login = () => {
             secureTextEntry
             value={password}
             onChangeText={setPassword}
+            autoComplete="password"
           />
 
           <TouchableOpacity style={styles.button} onPress={handleLogin}>
@@ -125,9 +133,7 @@ const Login = () => {
               style={styles.button}
               onPress={() => navigation.navigate('Register')}
             >
-              <Text style={styles.buttonText}>
-                CREATE AN ACCOUNT
-              </Text>
+              <Text style={styles.buttonText}>CREATE AN ACCOUNT</Text>
             </TouchableOpacity>
           </View>
         </View>

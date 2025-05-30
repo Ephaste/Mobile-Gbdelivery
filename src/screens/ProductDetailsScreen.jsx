@@ -12,61 +12,58 @@ import {
   View,
   ActivityIndicator,
   Alert,
+  FlatList,
 } from 'react-native';
 import Header from '../components/Header';
+import ProductCard from '../components/ProductCard';
 import { CartContext } from '../context/CartContext';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
 const ProductDetailsScreen = () => {
   const navigation = useNavigation();
   const { userId, addToCart } = useContext(CartContext);
-  const { product: item, imageUrl: initialImageUrl } = useRoute().params || {};
+  const { product: item, imageUrl: initialImageUrl, allProducts = [] } =
+    useRoute().params || {};
 
   const [quantity, setQuantity] = useState(1);
   const [imageUrl, setImageUrl] = useState(initialImageUrl);
   const [loadingImage, setLoadingImage] = useState(true);
+  const [related, setRelated] = useState([]);
 
+  // reset quantity when product changes
+  useEffect(() => {
+    setQuantity(1);
+  }, [item?.id]);
+
+  // 1) Fetch product image
   useEffect(() => {
     const productId = item?.id;
-    console.log('Loading images for product:', productId);
-
     if (!productId) {
-      console.warn('⚠️ No product.id provided, cannot fetch images');
       setLoadingImage(false);
       return;
     }
-
     (async () => {
       const form = new FormData();
       form.append('action', 'GET_PRODUCT_IMAGES_API');
       form.append('product_id', productId);
-
       try {
         const res = await fetch(
           'https://gbdelivering.com/action/select.php',
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'multipart/form-data' },
-            body: form,
-          }
+          { method: 'POST', body: form }
         );
         const json = await res.json();
-        console.log('Image fetch response for product', productId, json);
-
-        // json[0] may already be a full URL or just a filename
         const raw = json[0]?.trim();
         if (raw) {
-          const full =
+          setImageUrl(
             raw.startsWith('http')
               ? raw
-              : `https://gbdelivering.com/uploads/${raw}`;
-          setImageUrl(full);
+              : `https://gbdelivering.com/uploads/${raw}`
+          );
         } else {
-          console.log('No image returned for product:', productId);
           setImageUrl(null);
         }
       } catch (err) {
-        console.error('Failed to load image for product:', productId, err);
+        console.error('Failed to load image:', err);
         setImageUrl(null);
       } finally {
         setLoadingImage(false);
@@ -74,39 +71,33 @@ const ProductDetailsScreen = () => {
     })();
   }, [item]);
 
+  // 2) Filter related products
+  useEffect(() => {
+    if (allProducts.length && item?.subcategory) {
+      setRelated(
+        allProducts.filter(
+          p => p.subcategory === item.subcategory && p.id !== item.id
+        )
+      );
+    }
+  }, [allProducts, item]);
+
+  // 3) Handle add to cart
   const handleAddToCart = async () => {
     if (!userId) {
       Alert.alert('Error', 'Please log in first.', [
-        {
-          text: 'OK',
-          onPress: () =>
-            navigation.navigate('AccountTab', { screen: 'Login' }),
-        },
+        { text: 'OK', onPress: () => navigation.navigate('AccountTab', { screen: 'Login' }) },
       ]);
       return;
     }
-
-    const productId = item?.id;
-    console.log('Adding product to cart:', productId, 'quantity:', quantity);
-
-    if (!productId) {
-      Alert.alert('Error', 'Invalid product. Cannot add to cart.');
+    if (!item?.id) {
+      Alert.alert('Error', 'Invalid product.');
       return;
     }
-
     try {
-      await addToCart({
-        id: productId,
-        price: item.price,
-        quantity,
-      });
-
+      await addToCart({ id: item.id, price: item.price, quantity });
       Alert.alert('Success', 'Item added to cart!', [
-        {
-          text: 'OK',
-          onPress: () =>
-            navigation.navigate('CartTab', { screen: 'Cart' }),
-        },
+        { text: 'OK', onPress: () => navigation.navigate('CartTab',{screen:'Cart'} ) },
       ]);
     } catch (err) {
       console.error('Add to cart error:', err);
@@ -114,32 +105,38 @@ const ProductDetailsScreen = () => {
     }
   };
 
+  const handleBuyNow = () => {
+    if (!userId) {
+      Alert.alert('Error', 'Please log in first.', [
+        { text: 'OK', onPress: () => navigation.navigate('AccountTab', { screen: 'Login' }) },
+      ]);
+      return;
+    }
+    navigation.navigate('CartTab', {
+  screen: 'Newaddress',
+  params: {
+    amountToPay: item.price * quantity,
+    productId: item.id,
+    quantity,
+    fromDetails: true,
+  },
+});
+
+  };
+
   return (
-    <LinearGradient colors={['#ffffff', '#ffffff']} style={styles.container}>
+    <LinearGradient colors={['#fff', '#fff']} style={styles.container}>
       <ScrollView>
         <View style={styles.headerContainer}>
           <Header />
         </View>
 
         {loadingImage ? (
-          <ActivityIndicator
-            size="large"
-            color="#FF4500"
-            style={styles.coverImage}
-          />
+          <ActivityIndicator size="large" color="#FF4500" style={styles.coverImage} />
         ) : imageUrl ? (
           <Image source={{ uri: imageUrl }} style={styles.coverImage} />
         ) : (
-          <View
-            style={[
-              styles.coverImage,
-              {
-                backgroundColor: '#eee',
-                justifyContent: 'center',
-                alignItems: 'center',
-              },
-            ]}
-          >
+          <View style={[styles.coverImage, styles.noImage]}>
             <Text>No Image Available</Text>
           </View>
         )}
@@ -151,64 +148,73 @@ const ProductDetailsScreen = () => {
           </Text>
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Seller information</Text>
-          <View style={styles.infoRow}>
-            <Entypo name="info" size={18} color="#FF4500" />
-            <Text style={styles.infoText}>German Butchery Onlineshop</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Entypo name="info" size={18} color="#FF4500" />
-            <Text style={styles.infoText}>gbdelivering1@gmail.com</Text>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Estimated delivery time</Text>
-          <View style={styles.infoRow}>
-            <FontAwesome name="car" size={18} color="#FF4500" />
-            <Text style={styles.infoText}>In Kigali 2025-05-06</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <FontAwesome name="car" size={18} color="#FF4500" />
-            <Text style={styles.infoText}>Outside of Kigali 2025-05-09</Text>
-          </View>
-        </View>
-
+        {/* Quantity + Add to Cart + Checkout */}
         <View style={styles.buttonsContainer}>
-          <TouchableOpacity
-            style={styles.buttonFull}
-            onPress={() =>
-              navigation.navigate('CartStack', { screen: 'CHECKOUT' })
-            }
-          >
-            <Text style={styles.buttonText}>Buy now</Text>
-          </TouchableOpacity>
-
           <View style={styles.row}>
             <TouchableOpacity
               style={[styles.button, { width: '70%' }]}
               onPress={handleAddToCart}
             >
-              <Text style={styles.buttonText}>Add to cart</Text>
+              <Text style={styles.buttonText}>Add to Cart</Text>
             </TouchableOpacity>
-
             <View style={styles.quantityContainer}>
               <TouchableOpacity
-                onPress={() => setQuantity((q) => Math.max(q - 1, 1))}
+                onPress={() => setQuantity(q => Math.max(q - 1, 1))}
                 style={styles.qtyButton}
               >
                 <Text style={styles.qtyText}>-</Text>
               </TouchableOpacity>
               <Text style={styles.qtyValue}>{quantity}</Text>
               <TouchableOpacity
-                onPress={() => setQuantity((q) => q + 1)}
+                onPress={() => setQuantity(q => q + 1)}
                 style={styles.qtyButton}
               >
                 <Text style={styles.qtyText}>+</Text>
               </TouchableOpacity>
             </View>
           </View>
+
+          <Text style={styles.totalText}>
+            Total: {item?.price ? item.price * quantity : 0} Rwf
+          </Text>
+
+          {/* Buy Now / Checkout */}
+          <TouchableOpacity
+            style={[styles.button, { marginTop: 10 }]}
+            onPress={handleBuyNow}
+          >
+            <Text style={styles.buttonText}>Buy Now</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Related Products */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Related Products</Text>
+          {related.length === 0 ? (
+            <Text style={styles.emptyText}>No related products found.</Text>
+          ) : (
+            <FlatList
+              data={related}
+              numColumns={3}
+              keyExtractor={p => p.id.toString()}
+              renderItem={({ item: rel }) => (
+                <TouchableOpacity
+                  style={styles.productCardWrapper}
+                  onPress={() =>
+                    navigation.push('ProductDetails', {
+                      product: rel,
+                      imageUrl: rel.imageUrl,
+                      allProducts,
+                    })
+                  }
+                >
+                  <ProductCard item={rel} allProducts={allProducts} />
+                </TouchableOpacity>
+              )}
+              nestedScrollEnabled
+              contentContainerStyle={{ paddingBottom: 60 }}
+            />
+          )}
         </View>
       </ScrollView>
     </LinearGradient>
@@ -221,6 +227,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   headerContainer: { padding: 12, backgroundColor: '#fff' },
   coverImage: { width: '100%', height: 280 },
+  noImage: { backgroundColor: '#eee', justifyContent: 'center', alignItems: 'center' },
   titlePriceRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -228,41 +235,15 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     backgroundColor: '#fff',
   },
-  titleText: { fontSize: 18, fontWeight: '600', color: '#333', flex: 1 },
-  priceText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FF4500',
-    paddingLeft: 8,
-  },
-  section: { paddingHorizontal: 14, paddingVertical: 8 },
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    marginBottom: 8,
-    color: '#333',
-  },
-  infoRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 5 },
-  infoText: { marginLeft: 8, fontSize: 15, color: '#555' },
-  buttonsContainer: {
-    paddingHorizontal: 14,
-    marginTop: 16,
-    marginBottom: 30,
-  },
+  titleText: { fontSize: 18, fontWeight: '600', flex: 1, color: '#333' },
+  priceText: { fontSize: 16, fontWeight: '600', color: '#FF4500', paddingLeft: 8 },
+  buttonsContainer: { paddingHorizontal: 14, marginTop: 16 },
   button: {
     backgroundColor: '#FF4500',
     paddingVertical: 12,
     borderRadius: 10,
     alignItems: 'center',
-    marginBottom: 10,
     marginRight: 8,
-  },
-  buttonFull: {
-    backgroundColor: '#FF4500',
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginBottom: 10,
   },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   row: { flexDirection: 'row', alignItems: 'center' },
@@ -277,4 +258,20 @@ const styles = StyleSheet.create({
   qtyButton: { padding: 6 },
   qtyText: { fontSize: 20, fontWeight: 'bold' },
   qtyValue: { marginHorizontal: 10, fontSize: 16 },
+  totalText: {
+    fontSize: 15,
+    fontWeight: '500',
+    textAlign: 'right',
+    marginTop: 8,
+    color: '#333',
+  },
+  section: { paddingHorizontal: 14, paddingTop: 20 },
+  sectionTitle: { fontSize: 18, fontWeight: '600', marginBottom: 10, color: '#333' },
+  emptyText: { fontSize: 14, color: '#666' },
+  productCardWrapper: {
+    flex: 1,
+    maxWidth: '32%',
+    marginHorizontal: 4,
+    marginVertical: 6,
+  },
 });

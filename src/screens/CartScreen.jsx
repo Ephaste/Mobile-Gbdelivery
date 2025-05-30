@@ -1,3 +1,5 @@
+// src/screens/CartScreen.js
+
 import React, { useContext } from 'react';
 import {
   StyleSheet,
@@ -38,6 +40,7 @@ const CartScreen = () => {
     );
   }
 
+  // Calculate the cart total:
   const total = cartItems.reduce(
     (sum, item) =>
       sum +
@@ -68,7 +71,7 @@ const CartScreen = () => {
         ListFooterComponent={
           <View style={styles.footer}>
             <Text style={styles.total}>
-              Total: {total.toFixed(2)} Rwf
+              Total: {(total ?? 0).toFixed(2)} Rwf
             </Text>
 
             <TouchableOpacity
@@ -87,14 +90,25 @@ const CartScreen = () => {
               <Text style={styles.buttonText}>Clear Cart</Text>
             </TouchableOpacity>
 
+            {/* Pass the cart total into NewAddress */}
             <TouchableOpacity
               style={styles.button}
               onPress={() =>
-                navigation.navigate('Newaddress')
+                navigation.navigate('Newaddress', {
+                  amountToPay: total,
+                  fromDetails: false,
+                })
               }
             >
               <Text style={styles.buttonText}>Checkout</Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+  style={[styles.button, styles.keepShoppingButton]}
+  onPress={() => navigation.navigate('HomeTab', {screeen: 'Home'})}
+>
+  <Text style={styles.buttonText}>Keep Shopping</Text>
+</TouchableOpacity>
           </View>
         }
       />
@@ -129,4 +143,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyCartText: { fontSize: 18, color: '#757575' },
+  keepShoppingButton: {
+  backgroundColor: '#FFA500', 
+},
+
 });
