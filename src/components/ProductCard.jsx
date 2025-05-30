@@ -18,7 +18,7 @@ const ProductCard = ({ item, allProducts }) => {
 
   // Pick whichever field holds your stock count:
  
-  const isOutOfStock = item.stock_quantity == 0;
+  const isOutOfStock = item.stock_quantity === 0;
   useEffect(() => {
     const productId = item.product_id ?? item.id;
     if (!productId) {

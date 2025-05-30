@@ -51,11 +51,22 @@ const HomeScreen = ({ navigation }) => {
           body: formData,
         });
 
-        const data = await res.json();
-        setProducts(data);
-//const data = await res.json();
-console.log(data[0]);
-setProducts(data);
+//         const data = await res.json();
+//         setProducts(data);
+//         console.log(data[0]);
+
+//         const seen = new Set();
+// const unique = data.filter(item => {
+//   const key = item.product_id || item.id;
+//   if (seen.has(key)) return false;
+//   seen.add(key);
+//   return true;
+// });
+// console.log('Unique products:', unique.length);
+// setProducts(unique);
+
+
+
 
         // Extract unique categories
         const dynamicCategories = ['All', ...new Set(data.map(p => p.subcategory))];
