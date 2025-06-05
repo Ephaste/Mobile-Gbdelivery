@@ -51,19 +51,25 @@ const HomeScreen = ({ navigation }) => {
           body: formData,
         });
 
-//         const data = await res.json();
-//         setProducts(data);
-//         console.log(data[0]);
+      //  const data = await res.json();
+      //   setProducts(data);
 
-//         const seen = new Set();
-// const unique = data.filter(item => {
-//   const key = item.product_id || item.id;
-//   if (seen.has(key)) return false;
-//   seen.add(key);
-//   return true;
-// });
-// console.log('Unique products:', unique.length);
-// setProducts(unique);
+
+
+
+        const data = await res.json();
+
+// Remove duplicates by product_id or id
+const seen = new Set();
+const unique = data.filter(item => {
+  const key = item.product_id || item.id;
+  if (seen.has(key)) return false;
+  seen.add(key);
+  return true;
+});
+
+setProducts(unique);
+
 
 
 

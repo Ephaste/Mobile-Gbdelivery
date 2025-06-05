@@ -33,6 +33,7 @@ const DPO = ({ route, navigation }) => {
     const village = (await AsyncStorage.getItem('@village')) || '';
     const street = (await AsyncStorage.getItem('@street')) || '';
     const describedAddress = (await AsyncStorage.getItem('@describedAddress')) || '';
+console.log('Received amount:', amount);
 
     return {
       firstName,
@@ -153,6 +154,7 @@ const DPO = ({ route, navigation }) => {
       <View style={styles.footer}>
         <Text style={styles.text}>{displayText}</Text>
       </View>
+      
     </SafeAreaView>
   );
 };

@@ -48,24 +48,59 @@ export default function CheckoutScreen({ navigation }) {
         0
       );
 
-  const handleCardPayment = () => {
-    navigation.navigate('DPO', {
-      userId,
-      phoneNumber: phone,
-      orderDesc,
-      amount: total,
-      clearCart,
-      email: userEmail, // ← forward email
-      province,
-      district,
-      sector,
-      cell,
-      village,
-      street,
-      describedAddress: description,
-    });
-  };
+  // const handleCardPayment = () => {
+  //   navigation.navigate('DPO', {
+  //     userId,
+  //     phoneNumber: phone,
+  //     orderDesc,
+  //     amount: total,
+  //     clearCart,
+  //     email: userEmail, // ← forward email
+  //     province,
+  //     district,
+  //     sector,
+  //     cell,
+  //     village,
+  //     street,
+  //     describedAddress: description,
+  //   });
+  // };
 
+  const handleCardPayment = () => {
+ // ── 3 % surcharge for card payments ────────────────────────────────
+    const fee   = parseFloat((total * 0.03).toFixed(2));          // 3 %
+    const grand = parseFloat((total + fee).toFixed(2));           // total+fee
+
+    Alert.alert(
+      'Card Payment Fee',
+      `Paying with card adds a 3 % processing fee of ` +
+       `${fee.toFixed(2)} Rwf.\n\n` +
+        `Your new total is ${grand.toFixed(2)} Rwf.\n\n` +
+       'Do you want to continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Continue',
+          onPress: () =>
+            navigation.navigate('DPO', {
+              userId,
+              phoneNumber: phone,
+              orderDesc,
+              amount: grand,                 // ← pass the fee-inclusive amount
+              clearCart,
+              email: userEmail,
+             province,
+              district,
+              sector,
+              cell,
+              village,
+              street,
+              describedAddress: description,
+            }),
+        },
+      ],
+    );
+   };
   const handleMoMo = async () => {
     if (!phone.trim()) {
       Alert.alert('Validation', 'Please enter your phone number.');
@@ -213,7 +248,7 @@ export default function CheckoutScreen({ navigation }) {
           onPress={handleCardPayment}
           disabled={processing}
         >
-          <Text style={styles.buttonText}>Pay with Card</Text>
+           <Text style={styles.buttonText}>Pay with Card (+3 % fee)</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
