@@ -105,7 +105,7 @@ const CartScreen = () => {
 
             <TouchableOpacity
   style={[styles.button, styles.keepShoppingButton]}
-  onPress={() => navigation.navigate('HomeTab', {screeen: 'Home'})}
+  onPress={() => navigation.navigate('HomeTab', {screeen: 'ProductDetails'})}
 >
   <Text style={styles.buttonText}>Keep Shopping</Text>
 </TouchableOpacity>

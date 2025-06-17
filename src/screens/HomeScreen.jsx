@@ -1,5 +1,3 @@
-// src/screens/HomeScreen.js
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Fontisto } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -16,6 +14,15 @@ import Category from '../components/Category';
 import Header from '../components/Header';
 import ProductCard from '../components/ProductCard';
 
+// Debounce utility to limit API calls while typing
+const debounce = (func, delay) => {
+  let timeout;
+  return (...args) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), delay);
+  };
+};
+
 const HomeScreen = ({ navigation }) => {
   const route = useRoute();
   const focusSearch = route.params?.focusSearch;
@@ -26,10 +33,8 @@ const HomeScreen = ({ navigation }) => {
   const [searchText, setSearchText] = useState('');
   const [loading, setLoading] = useState(true);
 
-  // ref for TextInput
   const inputRef = useRef(null);
 
-  // auto-focus when coming from SearchTab
   useEffect(() => {
     if (focusSearch) {
       setTimeout(() => {
@@ -38,62 +43,109 @@ const HomeScreen = ({ navigation }) => {
     }
   }, [focusSearch]);
 
+  // Fetch all products initially (page 1)
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const formData = new FormData();
-        formData.append('action', 'GET_PRODUCTS_PAGES_API');
-        formData.append('pageno', '1');
-
-        const res = await fetch('https://gbdelivering.com/action/select.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'multipart/form-data' },
-          body: formData,
-        });
-
-      //  const data = await res.json();
-      //   setProducts(data);
-
-
-
-
-        const data = await res.json();
-
-// Remove duplicates by product_id or id
-const seen = new Set();
-const unique = data.filter(item => {
-  const key = item.product_id || item.id;
-  if (seen.has(key)) return false;
-  seen.add(key);
-  return true;
-});
-
-setProducts(unique);
-
-
-
-
-
-        // Extract unique categories
-        const dynamicCategories = ['All', ...new Set(data.map(p => p.subcategory))];
-        setCategories(dynamicCategories);
-      } catch (e) {
-        console.error('Failed to load products', e);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchProducts();
   }, []);
 
-  // Filter by category and search
+  const fetchProducts = async () => {
+    setLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('action', 'GET_PRODUCTS_PAGES_API');
+      formData.append('pageno', '1');
+
+      const res = await fetch('https://gbdelivering.com/action/select.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'multipart/form-data' },
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      // Remove duplicates by product_id or id
+      const seen = new Set();
+      const unique = data.filter(item => {
+        const key = item.product_id || item.id;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+
+      setProducts(unique);
+
+      // Extract unique categories dynamically
+      const dynamicCategories = ['All', ...new Set(data.map(p => p.subcategory))];
+      setCategories(dynamicCategories);
+    } catch (e) {
+      console.error('Failed to load products', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // New function: fetch products by search from API
+  const fetchSearchProducts = async (search) => {
+    setLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('action', 'GET_PRODUCTS_SEARCH_API');
+      formData.append('search', search);
+      formData.append('pageno', '1');
+      formData.append('sortby', '');
+
+      const res = await fetch('https://gbdelivering.com/action/select.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'multipart/form-data' },
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      // Remove duplicates (same as before)
+      const seen = new Set();
+      const unique = data.filter(item => {
+        const key = item.product_id || item.id;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+
+      setProducts(unique);
+
+      // Update categories based on search results
+      const dynamicCategories = ['All', ...new Set(data.map(p => p.subcategory))];
+      setCategories(dynamicCategories);
+
+      // Reset selected category when searching
+      setSelectedCategory('All');
+    } catch (e) {
+      console.error('Failed to load search products', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Debounced version of search to avoid too many requests
+  const debouncedSearch = useRef(
+    debounce((text) => {
+      if (text.trim() === '') {
+        fetchProducts(); // if search empty, load all products
+      } else {
+        fetchSearchProducts(text.trim());
+      }
+    }, 500)
+  ).current;
+
+  // Handler for search input change
+  const handleSearchChange = (text) => {
+    setSearchText(text);
+    debouncedSearch(text);
+  };
+
+  // Filter by selected category
   const filtered = products.filter(p => {
-    const matchesCategory =
-      selectedCategory === 'All' || p.subcategory === selectedCategory;
-    const matchesSearch =
-      p.name?.toLowerCase().includes(searchText.toLowerCase());
-    return matchesCategory && matchesSearch;
+    return selectedCategory === 'All' || p.subcategory === selectedCategory;
   });
 
   return (
@@ -106,7 +158,7 @@ setProducts(unique);
           style={styles.input}
           placeholder="Search"
           value={searchText}
-          onChangeText={setSearchText}
+          onChangeText={handleSearchChange}
           autoFocus={focusSearch}
         />
         <Fontisto name="search" size={20} color="#FF4500" />

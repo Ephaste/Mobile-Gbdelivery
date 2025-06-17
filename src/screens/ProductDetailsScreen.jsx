@@ -181,7 +181,7 @@ const ProductDetailsScreen = () => {
           {/* Buy Now / Checkout */}
           <TouchableOpacity
             style={[styles.button, { marginTop: 10 }]}
-            onPress={handleBuyNow}
+            onPress={handleAddToCart}
           >
             <Text style={styles.buttonText}>Buy Now</Text>
           </TouchableOpacity>

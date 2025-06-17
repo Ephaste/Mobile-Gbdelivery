@@ -19,6 +19,16 @@ const ProductCard = ({ item, allProducts }) => {
   // Pick whichever field holds your stock count:
  
   const isOutOfStock = item.stock_quantity <= 0;
+  const isDiscounted = item.isDiscounted === true || item.isDiscounted === '1' || item.isDiscounted === 1;
+
+if (item.isDiscounted == true){
+  console.log("The product is discounted",item.isDiscounted+ ":"+ item.name);
+}
+  // if (isOutOfStock){
+  //   console.log(item.name);
+  //     console.log(item.stock_quantity);
+  //     //console.log
+  // } 
   useEffect(() => {
     const productId = item.product_id ?? item.id;
     if (!productId) {
@@ -86,6 +96,11 @@ const ProductCard = ({ item, allProducts }) => {
         {isOutOfStock && (
           <Text style={styles.outOfStockLabel}>Out of stock</Text>
         )}
+        {isDiscounted && (
+          <Text style={styles.discountedLabel}>Discounted</Text>
+        )}
+
+
       </View>
 
       <TouchableOpacity
@@ -138,6 +153,17 @@ const styles = StyleSheet.create({
     padding: 5,
     zIndex: 10,
   },
+  labelContainer: {
+  position: 'absolute',
+  top: 8,
+  left: 0,
+  right: 0,
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  paddingHorizontal: 8,
+  zIndex: 20,
+},
+
   outOfStockLabel: {
     position: 'absolute',
     top: 8,
@@ -151,6 +177,20 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     zIndex: 20,
   },
+  discountedLabel: {
+  position: 'absolute',
+  top: 8,
+  left: 8,  // position on the right so it doesn't overlap with Out of stock label on left
+  backgroundColor: '#28a745', // green color
+  color: 'white',
+  paddingHorizontal: 2,
+  paddingVertical: 2,
+  borderRadius: 4,
+  fontSize: 12,
+  fontWeight: 'bold',
+  zIndex: 20,
+},
+
   content: {
     padding: 10,
   },

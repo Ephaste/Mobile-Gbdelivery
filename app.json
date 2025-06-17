@@ -1,8 +1,8 @@
 {
   "expo": {
     "name": "Gbdelivering",
-    "slug": "Gbdelivering",
-    "version": "1.0.0",
+    "slug": "desktop",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -21,15 +21,17 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.ephaste.Gbdelivering"
+    "versionCode": 1,
+      "package": "com.ephaste.gbdelivering2025v2"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "extra": {
       "eas": {
-        "projectId": "60f30830-62ff-480f-8a24-9276e72b0992"
+        "projectId": "334ca8bc-75ad-4902-906b-2251afaf7661"
       }
-    }
+    },
+    "owner": "ephaste"
   }
 }
