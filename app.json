@@ -21,7 +21,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-    "versionCode": 1,
+      "versionCode": 1,
       "package": "com.ephaste.gbdelivering2025v2"
     },
     "web": {
@@ -32,6 +32,9 @@
         "projectId": "334ca8bc-75ad-4902-906b-2251afaf7661"
       }
     },
-    "owner": "ephaste"
+    "owner": "ephaste",
+    "plugins": [
+      "expo-web-browser"
+    ]
   }
 }

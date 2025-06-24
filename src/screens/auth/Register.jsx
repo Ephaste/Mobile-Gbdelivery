@@ -21,40 +21,109 @@ export default function Register() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+const handleSubmit = async () => {
+  const usernameRegex = /^[a-zA-Z0-9]+$/;
 
-  const handleSubmit = async () => {
-    if (!username.trim() || password !== confirm) {
-      Alert.alert("Error", password !== confirm ? "Passwords do not match" : "Username required");
+  if (!username.trim() || !usernameRegex.test(username) || username.length < 6) {
+    Alert.alert(
+      "Invalid Username",
+      "Username must be alphanumeric and at least 6 characters long."
+    );
+    return;
+  }
+
+  if (password !== confirm) {
+    Alert.alert("Error", "Passwords do not match.");
+    return;
+  }
+
+  const form = new FormData();
+  form.append("action", "CREATE_ACCOUNT_API");
+  form.append("first_name", firstname);
+  form.append("last_name", lastname);
+  form.append("email", email);
+  form.append("phone_no", phone);
+  form.append("username", username.trim());
+  form.append("password", password);
+
+  try {
+    const res = await fetch("https://gbdelivering.com/action/insert.php", {
+      method: "POST",
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+      body: form,
+    });
+
+    const text = await res.text();
+
+    if (!text.trim()) {
+      Alert.alert("Server Error", "No response from server.", [
+        { text: "OK", onPress: () => navigation.navigate("Login") },
+      ]);
       return;
     }
 
-    const form = new FormData();
-    form.append("action", "CREATE_ACCOUNT_API");
-    form.append("first_name", firstname);
-    form.append("last_name", lastname);
-    form.append("email", email);
-    form.append("phone_no", phone);
-    form.append("username", username.trim());
-    form.append("password", password);
-
+    let json;
     try {
-      const res = await fetch("https://gbdelivering.com/action/insert.php", {
-        method: "POST",
-        body: form,
-      });
-      const json = await res.json();
-      if (Array.isArray(json) && json[0].status === "ACCOUNT_CREATED") {
-        Alert.alert("Success", "Account created", [
+      json = JSON.parse(text);
+    } catch (err) {
+      console.error("❌ Failed to parse JSON:", err);
+      console.log("🧪 Raw server response:", text);
+
+      if (text.includes("ACCOUNT_CREATED")) {
+        Alert.alert("Success", "Account created successfully!", [
+          { text: "OK", onPress: () => navigation.navigate("Login") },
+        ]);
+      } else if (text.includes("USED_EMAIL")) {
+        Alert.alert("Email Exists", "This email is already registered.", [
           { text: "OK", onPress: () => navigation.navigate("Login") },
         ]);
       } else {
-        Alert.alert("Error", json[0]?.status || "Registration failed");
+        Alert.alert("Account might be registered!", [
+          { text: "OK", onPress: () => navigation.navigate("Login") },
+        ]);
       }
-    } catch (err) {
-      console.error(err);
-      Alert.alert("Error", "Unable to register. Try again.");
+      return;
     }
-  };
+
+    const status = json[0]?.status?.trim();
+
+    switch (status) {
+      case "ACCOUNT_CREATED":
+        Alert.alert("Success", "Account created successfully!", [
+          { text: "OK", onPress: () => navigation.navigate("Login") },
+        ]);
+        break;
+      case "INVALID_EMAIL":
+        Alert.alert("Invalid Email", "Please enter a valid email address.");
+        break;
+      case "INVALID_USERNAME":
+        Alert.alert(
+          "Invalid Username",
+          "Username must be alphanumeric and at least 6 characters long."
+        );
+        break;
+      case "INVALID_PASSWORD":
+        Alert.alert(
+          "Weak Password",
+          "Password must be at least 6 characters and contain lowercase letters and numbers."
+        );
+        break;
+      case "USED_EMAIL":
+        Alert.alert("Email Exists", "This email is already registered.");
+        break;
+      default:
+        Alert.alert("Error", status || "Registration failed. Try again.");
+    }
+  } catch (err) {
+    console.error("❌ Network or unexpected error:", err);
+    Alert.alert("Account is registered!", [
+      { text: "OK", onPress: () => navigation.navigate("Login") },
+    ]);
+  }
+};
+
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
