@@ -8,6 +8,7 @@ import {
   SafeAreaView,
   ActivityIndicator,
   Platform,
+  Alert,
 } from 'react-native';
 import { FontAwesome, MaterialIcons, Entypo } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -24,7 +25,7 @@ const AccountScreen = () => {
   const isMounted = useRef(true);
 
   const [userId, setUserId] = useState(null);
-  const [userData, setUserData] = useState(null);  // single user profile object
+  const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedView, setSelectedView] = useState('account');
 
@@ -34,7 +35,6 @@ const AccountScreen = () => {
     };
   }, []);
 
-  // Load userId from AsyncStorage
   useEffect(() => {
     const loadUserId = async () => {
       try {
@@ -51,7 +51,6 @@ const AccountScreen = () => {
     loadUserId();
   }, []);
 
-  // Fetch user profile data after we have userId
   useEffect(() => {
     if (!userId) return;
 
@@ -68,8 +67,6 @@ const AccountScreen = () => {
           body: form,
         });
         const json = await res.json();
-
-        // Assuming API returns an array of user profiles; take first one
         const profile = json.length > 0 ? json[0] : null;
 
         if (isMounted.current) setUserData(profile);
@@ -83,7 +80,31 @@ const AccountScreen = () => {
     fetchProfile();
   }, [userId]);
 
-  // Shortcuts for profile data
+  const logout = async () => {
+    Alert.alert('Confirm Logout', 'Are you sure you want to logout?', [
+      {
+        text: 'Cancel',
+        style: 'cancel',
+      },
+      {
+        text: 'Logout',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await AsyncStorage.clear();
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Login' }],
+            });
+          } catch (err) {
+            console.error('Logout failed:', err);
+            Alert.alert('Error', 'Failed to logout');
+          }
+        },
+      },
+    ]);
+  };
+
   const profile = userData || {};
 
   const renderSelectedContent = () => {
@@ -137,8 +158,7 @@ const AccountScreen = () => {
             {profile.first_name || ''} {profile.last_name || ''}
           </Text>
 
-          {[
-            { key: 'account', label: 'Manage my Account' },
+          {[{ key: 'account', label: 'Manage my Account' },
             { key: 'address', label: 'Manage my Address' },
             { key: 'profile', label: 'My Profile' },
             { key: 'trackOrders', label: 'Track Orders' },
@@ -186,7 +206,15 @@ const AccountScreen = () => {
             <Text style={styles.orderText}>Placed On</Text>
             <Text style={styles.orderText}>Total</Text>
           </View>
-          {/* Render recent orders list here */}
+        </View>
+
+        <View style={styles.section}>
+          <TouchableOpacity
+            style={{ backgroundColor: '#FF4500', padding: 12, borderRadius: 8, alignItems: 'center' }}
+            onPress={logout}
+          >
+            <Text style={{ color: 'white', fontWeight: 'bold' }}>LOGOUT</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -218,7 +246,6 @@ const styles = StyleSheet.create({
   activeNavItem: { borderBottomWidth: 2, borderBottomColor: 'skyblue' },
   navText: { fontSize: 16 },
   selectedNavText: { fontWeight: 'bold', color: 'skyblue' },
-
   section: {
     backgroundColor: 'white',
     padding: 15,
@@ -231,7 +258,6 @@ const styles = StyleSheet.create({
   greetingText: { color: 'gray', fontSize: 16 },
   nameText: { fontSize: 18, fontWeight: 'bold', marginBottom: 10 },
   option: { marginVertical: 4 },
-
   statsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -240,10 +266,8 @@ const styles = StyleSheet.create({
   statCard: { alignItems: 'center' },
   statNumber: { fontSize: 20, fontWeight: 'bold', marginTop: 5 },
   statLabel: { fontSize: 14, color: 'gray', marginTop: 2, textAlign: 'center' },
-
   subHeading: { fontSize: 16, color: 'gray', marginBottom: 10 },
   profileCard: { backgroundColor: '#f0f0f0', padding: 15, borderRadius: 8 },
-
   ordersHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',

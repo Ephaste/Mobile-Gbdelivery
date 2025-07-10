@@ -5,6 +5,7 @@
     "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
+    "scheme": "gbdelivery",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -27,14 +28,14 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "plugins": [
+      "@react-native-google-signin/google-signin"
+    ],
     "extra": {
       "eas": {
-        "projectId": "334ca8bc-75ad-4902-906b-2251afaf7661"
+        "projectId": "dd4d755a-83d5-4522-972b-20df323ba5b7"
       }
     },
-    "owner": "ephaste",
-    "plugins": [
-      "expo-web-browser"
-    ]
+    "owner": "ephastee"
   }
 }
